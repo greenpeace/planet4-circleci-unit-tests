@@ -1,0 +1,23 @@
+# hadolint ignore=DL3007
+FROM ${BASE_IMAGE_NAME}:7.2
+
+LABEL authors="${AUTHOR}"
+
+# hadolint ignore=DL3004,DL4006
+RUN sudo apt-get update && sudo apt-get install subversion && \
+    sudo -E docker-php-ext-install mysqli && \
+    sudo sh -c "printf '\ndeb http://ftp.us.debian.org/debian sid main\n' >> /etc/apt/sources.list" && \
+    curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -  && \
+    sudo apt-get update && \
+    sudo apt-get install mysql-client-5.7=5.7.25-1  \
+                         build-essential \
+                         nodejs && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+# hadolint ignore=DL3004,DL4006
+RUN sudo npm install -g \
+                stylelint@9.10.1 \
+                eslint@5.15.1
+
+
+ENV PATH="/home/circleci/.composer/vendor/bin:${PATH}"

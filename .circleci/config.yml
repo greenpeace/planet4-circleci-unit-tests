@@ -1,0 +1,102 @@
+---
+defaults: &defaults
+  environment:
+    GOOGLE_PROJECT_ID: planet-4-151612
+  docker:
+    - image: gcr.io/planet-4-151612/circleci-base:latest
+  working_directory: /home/circleci/app
+
+version: 2
+
+jobs:
+  build-push:
+    <<: *defaults
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run: make clean build test
+      - run: activate-gcloud-account.sh
+      - run: gcloud auth configure-docker
+      - run: |
+          mkdir -p /tmp/workspace/var
+          echo "${CIRCLE_BUILD_NUM}" > /tmp/workspace/var/circle-build-num
+      - run: make -j2 push
+      - run:
+          name: Notify failure
+          when: on_fail
+          command: TYPE="Build" notify-job-failure.sh
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - var
+
+  notify-promote:
+    <<: *defaults
+    steps:
+      - run: TYPE="@rawalker Promotion" notify-job-hold.sh
+
+  promote:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - checkout
+      - run:
+          name: Release
+          command: |
+            current_version=$(git-current-tag.sh)
+            new_version=$(increment-version.sh $current_version)
+            echo "Promoting branch ${CIRCLE_BRANCH} to ${new_version}"
+
+            release-start.sh $new_version
+            release-finish.sh $new_version
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Commit
+          command: |
+            git checkout ${CIRCLE_BRANCH}
+            make clean build
+            update-build-numbers.sh -f src/Dockerfile
+
+workflows:
+  version: 2
+  branch:
+    jobs:
+      - build-push:
+          context: org-global
+          filters:
+            branches:
+              ignore: master
+      - hold-promote:
+          type: approval
+          requires:
+            - build-push
+          filters:
+            branches:
+              only: develop
+      - notify-promote:
+          context: org-global
+          requires:
+            - build-push
+          filters:
+            branches:
+              only: develop
+      - promote:
+          context: org-global
+          requires:
+            - hold-promote
+          filters:
+            branches:
+              only: develop
+
+  tag:
+    jobs:
+      - build-push:
+          context: org-global
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
