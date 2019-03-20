@@ -23,6 +23,12 @@ jobs:
           echo "${CIRCLE_BUILD_NUM}" > /tmp/workspace/var/circle-build-num
       - run: make -j2 push
       - run:
+          name: Push latest tags
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              make push-latest
+            fi
+      - run:
           name: Notify failure
           when: on_fail
           command: TYPE="Build" notify-job-failure.sh
