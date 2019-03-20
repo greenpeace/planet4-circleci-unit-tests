@@ -142,6 +142,10 @@ endif
 	if [[ "$(PUSH_LATEST)" = "true" ]]; then { \
 		docker tag $(BUILD_IMAGE):php7.0-$(REVISION_TAG) $(BUILD_IMAGE):latest; \
 		docker push $(BUILD_IMAGE):latest; \
+		for v in $(VERSIONS); do \
+			docker tag $(BUILD_IMAGE):php$${v}-$(REVISION_TAG) $(BUILD_IMAGE):php$${v}; \
+			docker push $(BUILD_IMAGE):php$${v}; \
+		done \
 	}	else { \
 		echo "Not tagged.. skipping latest"; \
 	} fi
