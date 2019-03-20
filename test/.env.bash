@@ -7,22 +7,18 @@ VERSION_REGEX="v?[[:digit:]]+\\.[[:digit:]]+"
 [ -z "${BUILD_IMAGE:-}" ] && BUILD_IMAGE=gcr.io/planet-4-151612/p4-unit-tests
 [ -z "${BUILD_TAG:-}" ] && BUILD_TAG=build-${CIRCLE_BUILD_NUM:-$(uname -n | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9._-]/-/g')}
 
-BATS_IMAGE="${BUILD_IMAGE}:${BUILD_TAG}"
+BATS_IMAGE="${BUILD_IMAGE}:php${TESTVERSION}-${BUILD_TAG}"
 
 FOLDER=${CIRCLE_PROJECT_REPONAME:-$(basename "$(git rev-parse --show-toplevel)")}
 
 function setup {
   set -e
-  docker images | grep -Eq "^${BUILD_IMAGE}\\s+${BUILD_TAG}" || {
+  docker images | grep -Eq "^${BUILD_IMAGE}\\s+php${TESTVERSION}-${BUILD_TAG}" || {
     >&2 echo "ERROR: Image not found: ${BATS_IMAGE}"
     >&2 echo "Perhaps run make first?"
     exit 1
   }
 }
-#
-# function teardown {
-#   store_output
-# }
 
 function finish {
   { set +ex; } 2>/dev/null

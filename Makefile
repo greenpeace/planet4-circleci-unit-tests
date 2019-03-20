@@ -56,6 +56,7 @@ CIRCLECI := $(shell command -v circleci 2> /dev/null)
 DOCKER := $(shell command -v docker 2> /dev/null)
 YAMLLINT := $(shell command -v yamllint 2> /dev/null)
 VERSIONS := $(shell find php/* -type d | sed s/php\\///g )
+export VERSIONS
 
 # ============================================================================
 
@@ -67,7 +68,7 @@ init:
 	@find .githooks -type f -exec ln -sf ../../{} .git/hooks/ \;
 
 clean:
-	rm -f Dockerfile
+	rm -f php/7.0/Dockerfile php/7.1/Dockerfile php/7.2/Dockerfile
 
 lint: lint-yaml lint-docker lint-ci
 
@@ -104,32 +105,23 @@ ifndef DOCKER
 $(error "docker is not installed: https://docs.docker.com/install/")
 endif
 	$(MAKE) -j lint pull
-	docker build  \
-		--tag=$(BUILD_IMAGE):php7.0 \
-		--tag=$(BUILD_IMAGE):php7.0-$(BUILD_TAG) \
-		--tag=$(BUILD_IMAGE):php7.0-$(BUILD_NUM) \
-		--tag=$(BUILD_IMAGE):php7.0-$(REVISION_TAG) \
-		php/7.0/
-	docker build  \
-		--tag=$(BUILD_IMAGE):php7.1 \
-		--tag=$(BUILD_IMAGE):php7.1-$(BUILD_TAG) \
-		--tag=$(BUILD_IMAGE):php7.1-$(BUILD_NUM) \
-		--tag=$(BUILD_IMAGE):php7.1-$(REVISION_TAG) \
-		php/7.1/
-	docker build  \
-		--tag=$(BUILD_IMAGE):php7.2 \
-		--tag=$(BUILD_IMAGE):php7.2-$(BUILD_TAG) \
-		--tag=$(BUILD_IMAGE):php7.2-$(BUILD_NUM) \
-		--tag=$(BUILD_IMAGE):php7.2-$(REVISION_TAG) \
-		php/7.2/
+	for v in $(VERSIONS); do \
+		docker build  \
+			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_TAG) \
+			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_NUM) \
+			--tag=$(BUILD_IMAGE):php$${v}-$(REVISION_TAG) \
+			php/$${v}/ ; \
+	done
 
 .PHONY: test
 test:
-		@$(MAKE) -j1 -C $@ clean
-		@$(MAKE) -k -C $@
-		$(MAKE) -C $@ status
+	for v in $(VERSIONS); do \
+		$(MAKE) -C $@ clean; \
+		$(MAKE) TESTVERSION=$$v -k -C $@; \
+		$(MAKE) -C $@ status; \
+	done
 
-push: push-tag push-latest
+push: push-tag
 
 push-tag:
 ifndef DOCKER
@@ -142,6 +134,7 @@ endif
 	docker push $(BUILD_IMAGE):php7.2-$(BUILD_TAG)
 	docker push $(BUILD_IMAGE):php7.2-$(BUILD_NUM)
 
+#TODO fix push-latest
 push-latest:
 ifndef DOCKER
 $(error "docker is not installed: https://docs.docker.com/install/")
