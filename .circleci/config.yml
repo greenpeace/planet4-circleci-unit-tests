@@ -21,13 +21,7 @@ jobs:
       - run: |
           mkdir -p /tmp/workspace/var
           echo "${CIRCLE_BUILD_NUM}" > /tmp/workspace/var/circle-build-num
-      - run: make -j2 push
-      - run:
-          name: Push latest tags
-          command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              make push-latest
-            fi
+      - run: make -j2 push push-latest
       - run:
           name: Notify failure
           when: on_fail
@@ -64,7 +58,10 @@ jobs:
           command: |
             git checkout ${CIRCLE_BRANCH}
             make clean build
-            update-build-numbers.sh -f src/Dockerfile
+            update-build-numbers.sh -f \
+                php/7.0/Dockerfile \
+                php/7.1/Dockerfile \
+                php/7.2/Dockerfile
 
 workflows:
   version: 2
