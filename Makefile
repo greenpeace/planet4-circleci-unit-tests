@@ -1,5 +1,15 @@
 SHELL := /bin/bash
 
+# ============================================================================
+
+# https://www.npmjs.com/package/stylelint
+STYLELINT_VERSION := 9.10.1
+
+# https://www.npmjs.com/package/eslint
+ESLINT_VERSION :=5.16.0
+
+# ============================================================================
+
 IMAGE_NAME := p4-unit-tests
 BUILD_NAMESPACE ?= gcr.io
 GOOGLE_PROJECT_ID ?= planet-4-151612
@@ -8,7 +18,7 @@ BUILD_IMAGE := $(BUILD_NAMESPACE)/$(GOOGLE_PROJECT_ID)/$(IMAGE_NAME)
 export BUILD_IMAGE
 
 BASE_IMAGE_NAME ?= circleci/php
-BASE_IMAGE_VERSION ?= 7.0
+BASE_IMAGE_VERSION ?= 7.3
 export BASE_IMAGE_NAME
 
 BASE_IMAGE := $(BASE_IMAGE_NAME):$(BASE_IMAGE_VERSION)
@@ -68,27 +78,28 @@ init:
 	@find .githooks -type f -exec ln -sf ../../{} .git/hooks/ \;
 
 clean:
-	rm -f php/7.0/Dockerfile php/7.1/Dockerfile php/7.2/Dockerfile
+	find . -type f -name 'Dockerfile' -exec rm {} \;
 
 lint: lint-yaml lint-docker lint-ci
 
 lint-yaml:
 ifndef YAMLLINT
-$(error "yamllint is not installed: https://github.com/adrienverge/yamllint")
+	$(error "yamllint is not installed: https://github.com/adrienverge/yamllint")
 endif
 	@find . -type f -name '*.yml' | xargs yamllint
+	@find . -type f -name '*.yaml' | xargs yamllint
 
 lint-docker: Dockerfile
 ifndef DOCKER
-$(error "docker is not installed: https://docs.docker.com/install/")
+	$(error "docker is not installed: https://docs.docker.com/install/")
 endif
-	@docker run --rm -i hadolint/hadolint < php/7.0/Dockerfile >/dev/null
-	@docker run --rm -i hadolint/hadolint < php/7.1/Dockerfile >/dev/null
-	@docker run --rm -i hadolint/hadolint < php/7.2/Dockerfile >/dev/null
+	for v in $(VERSIONS); do \
+		docker run --rm -i hadolint/hadolint < php/$${v}/Dockerfile ; \
+	done
 
 lint-ci:
 ifndef CIRCLECI
-$(error "circleci is not installed: https://circleci.com/docs/2.0/local-cli/#installation")
+	$(error "circleci is not installed: https://circleci.com/docs/2.0/local-cli/#installation")
 endif
 	@circleci config validate >/dev/null
 
@@ -96,9 +107,12 @@ pull:
 	docker pull $(BASE_IMAGE)
 
 Dockerfile:
-	envsubst '$${BASE_IMAGE_NAME},$${AUTHOR}' < php/7.0/Dockerfile.in > php/7.0/$@
-	envsubst '$${BASE_IMAGE_NAME},$${AUTHOR}' < php/7.1/Dockerfile.in > php/7.1/$@
-	envsubst '$${BASE_IMAGE_NAME},$${AUTHOR}' < php/7.2/Dockerfile.in > php/7.2/$@
+	for v in $(VERSIONS); do \
+		if [[ -f php/$${v}/Dockerfile.in ]] ; then f=php/$${v}/Dockerfile.in; else f=Dockerfile.common.in ; fi ; \
+		PHP_VERSION=$${v} envsubst \
+			'$${BASE_IMAGE_NAME},$${AUTHOR},$${PHP_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
+			< $$f > php/$${v}/$@ ; \
+	done
 
 build:
 ifndef DOCKER
@@ -106,7 +120,7 @@ $(error "docker is not installed: https://docs.docker.com/install/")
 endif
 	$(MAKE) -j lint pull
 	for v in $(VERSIONS); do \
-		docker build  \
+		docker build \
 			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_TAG) \
 			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_NUM) \
 			--tag=$(BUILD_IMAGE):php$${v}-$(REVISION_TAG) \
@@ -115,33 +129,28 @@ endif
 
 .PHONY: test
 test:
-	for v in $(VERSIONS); do \
-		$(MAKE) -C $@ clean; \
-		$(MAKE) TESTVERSION=$$v -k -C $@; \
-		$(MAKE) -C $@ status; \
+	@for v in $(VERSIONS); do \
+		$(MAKE) --no-print-directory -C $@ clean; \
+		$(MAKE) TESTVERSION=$$v --no-print-directory -k -C $@; \
+		$(MAKE) --no-print-directory -C $@ status; \
 	done
 
 push: push-tag
 
 push-tag:
 ifndef DOCKER
-$(error "docker is not installed: https://docs.docker.com/install/")
+	$(error "docker is not installed: https://docs.docker.com/install/")
 endif
-	docker push $(BUILD_IMAGE):php7.0-$(BUILD_TAG)
-	docker push $(BUILD_IMAGE):php7.0-$(BUILD_NUM)
-	docker push $(BUILD_IMAGE):php7.1-$(BUILD_TAG)
-	docker push $(BUILD_IMAGE):php7.1-$(BUILD_NUM)
-	docker push $(BUILD_IMAGE):php7.2-$(BUILD_TAG)
-	docker push $(BUILD_IMAGE):php7.2-$(BUILD_NUM)
+	for v in $(VERSIONS); do \
+		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_TAG) ; \
+		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_NUM) ; \
+	done
 
-#TODO fix push-latest
 push-latest:
 ifndef DOCKER
-$(error "docker is not installed: https://docs.docker.com/install/")
+	$(error "docker is not installed: https://docs.docker.com/install/")
 endif
 	if [[ "$(PUSH_LATEST)" = "true" ]]; then { \
-		docker tag $(BUILD_IMAGE):php7.0-$(REVISION_TAG) $(BUILD_IMAGE):latest; \
-		docker push $(BUILD_IMAGE):latest; \
 		for v in $(VERSIONS); do \
 			docker tag $(BUILD_IMAGE):php$${v}-$(REVISION_TAG) $(BUILD_IMAGE):php$${v}; \
 			docker push $(BUILD_IMAGE):php$${v}; \
