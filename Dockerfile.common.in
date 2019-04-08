@@ -1,6 +1,6 @@
-FROM circleci/php:7.0
+FROM ${BASE_IMAGE_NAME}:${PHP_VERSION}
 
-LABEL authors="Raymond Walker <raymond.walker@greenpeace.org>"
+LABEL authors="${AUTHOR}"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -19,8 +19,8 @@ RUN echo 'deb http://ftp.us.debian.org/debian sid main' | tee -a /etc/apt/source
     docker-php-ext-install mysqli
 
 RUN npm install -g \
-      stylelint@ \
-      eslint@
+      stylelint@${STYLELINT_VERSION} \
+      eslint@${ESLINT_VERSION}
 
 USER circleci
 
