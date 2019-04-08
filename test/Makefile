@@ -41,7 +41,6 @@ ifndef LOGS
 $(error LOGS is not set. Cowardly refusing to rm -fr an empty string)
 endif
 		@rm -fr $(LOGS)/
-		echo 'debug test clean' $@
 
 status:
 		@echo 'ok'
@@ -52,7 +51,7 @@ tap: $(LOGS)/%.$(TAP)
 xml: $(LOGS)/%/results.$(XML)
 
 $(LOGS):
-		mkdir -p $(XML_DIRS)
+		@mkdir -p $(XML_DIRS)
 
 $(LOGS)/%.$(TAP): %.$(BATS)
 		-@OUT=$(OUT) bats --tap $^ | tee $@
