@@ -3,10 +3,10 @@ SHELL := /bin/bash
 # ============================================================================
 
 # https://www.npmjs.com/package/stylelint
-STYLELINT_VERSION := 9.10.1
+STYLELINT_VERSION := 10.0.1
 
 # https://www.npmjs.com/package/eslint
-ESLINT_VERSION :=5.16.0
+ESLINT_VERSION := 5.16.0
 
 # ============================================================================
 
