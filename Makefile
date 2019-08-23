@@ -11,10 +11,9 @@ ESLINT_VERSION := 5.16.0
 # ============================================================================
 
 IMAGE_NAME := p4-unit-tests
-BUILD_NAMESPACE ?= gcr.io
-GOOGLE_PROJECT_ID ?= planet-4-151612
+BUILD_NAMESPACE ?= greenpeaceinternational
 
-BUILD_IMAGE := $(BUILD_NAMESPACE)/$(GOOGLE_PROJECT_ID)/$(IMAGE_NAME)
+BUILD_IMAGE := $(BUILD_NAMESPACE)/$(IMAGE_NAME)
 export BUILD_IMAGE
 
 BASE_IMAGE_NAME ?= circleci/php

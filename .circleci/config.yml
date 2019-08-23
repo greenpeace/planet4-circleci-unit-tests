@@ -16,20 +16,12 @@ jobs:
           docker_layer_caching: true
       - checkout
       - run: make clean build test
-      - run: activate-gcloud-account.sh
-      - run: gcloud auth configure-docker
-      - run: |
-          mkdir -p /tmp/workspace/var
-          echo "${CIRCLE_BUILD_NUM}" > /tmp/workspace/var/circle-build-num
+      - run: docker-login.sh
       - run: make -j2 push push-latest
       - run:
           name: Notify failure
           when: on_fail
           command: TYPE="Build" notify-job-failure.sh
-      - persist_to_workspace:
-          root: /tmp/workspace
-          paths:
-            - var
 
   notify-promote:
     <<: *defaults
@@ -39,8 +31,6 @@ jobs:
   promote:
     <<: *defaults
     steps:
-      - attach_workspace:
-          at: /tmp/workspace
       - checkout
       - run:
           name: Release
@@ -59,9 +49,8 @@ jobs:
             git checkout ${CIRCLE_BRANCH}
             make clean build
             update-build-numbers.sh -f \
-                php/7.0/Dockerfile \
-                php/7.1/Dockerfile \
-                php/7.2/Dockerfile
+                php/7.2/Dockerfile \
+                php/7.3/Dockerfile
 
 workflows:
   version: 2
