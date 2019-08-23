@@ -17,11 +17,18 @@ jobs:
       - checkout
       - run: make clean build test
       - run: docker-login.sh
+      - run: |
+          mkdir -p /tmp/workspace/var
+          echo "${CIRCLE_BUILD_NUM}" > /tmp/workspace/var/circle-build-num
       - run: make -j2 push push-latest
       - run:
           name: Notify failure
           when: on_fail
           command: TYPE="Build" notify-job-failure.sh
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - var
 
   notify-promote:
     <<: *defaults
@@ -31,6 +38,8 @@ jobs:
   promote:
     <<: *defaults
     steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - checkout
       - run:
           name: Release
