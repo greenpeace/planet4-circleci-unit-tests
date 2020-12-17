@@ -65,17 +65,14 @@ export VERSIONS
 
 # ============================================================================
 
-all: init clean build test push
+all: init build test push
 
 init:
 	@chmod 755 .githooks/*
 	@find .git/hooks -type l -exec rm {} \;
 	@find .githooks -type f -exec ln -sf ../../{} .git/hooks/ \;
 
-clean:
-	find . -type f -name 'Dockerfile' -exec rm {} \;
-
-lint: lint-yaml lint-docker lint-ci
+lint: lint-yaml lint-docker
 
 lint-yaml:
 ifndef YAMLLINT
@@ -90,12 +87,6 @@ endif
 	for v in $(VERSIONS); do \
 		docker run --rm -i hadolint/hadolint < php/$${v}/Dockerfile ; \
 	done
-
-lint-ci:
-ifndef CIRCLECI
-	$(error "circleci is not installed: https://circleci.com/docs/2.0/local-cli/#installation")
-endif
-	@circleci config validate >/dev/null
 
 pull:
 	docker pull $(BASE_IMAGE)
