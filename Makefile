@@ -18,12 +18,15 @@ BUILD_NAMESPACE ?= greenpeaceinternational
 BUILD_IMAGE := $(BUILD_NAMESPACE)/$(IMAGE_NAME)
 export BUILD_IMAGE
 
-BASE_IMAGE_NAME ?= circleci/php
-BASE_IMAGE_VERSION ?= 7.3
-export BASE_IMAGE_NAME
+# PHP image
+PHP_IMAGE_NAME ?= circleci/php
+export PHP_IMAGE_NAME
 
-BASE_IMAGE := $(BASE_IMAGE_NAME):$(BASE_IMAGE_VERSION)
-export BASE_IMAGE
+# Node image
+NODE_IMAGE_NAME ?= circleci/node
+NODE_IMAGE_VERSION ?= lts
+export NODE_IMAGE_NAME
+export NODE_IMAGE_VERSION
 
 # ============================================================================
 
@@ -57,11 +60,10 @@ REVISION_TAG = $(shell git rev-parse --short HEAD)
 
 # Check necessary commands exist
 
-CIRCLECI := $(shell command -v circleci 2> /dev/null)
 DOCKER := $(shell command -v docker 2> /dev/null)
 YAMLLINT := $(shell command -v yamllint 2> /dev/null)
-VERSIONS := $(shell find php/* -type d | sed s/php\\///g )
-export VERSIONS
+PHP_VERSIONS := $(shell find php/* -type d | sed s/php\\///g )
+export PHP_VERSIONS
 
 # ============================================================================
 
@@ -84,37 +86,43 @@ lint-docker: Dockerfile
 ifndef DOCKER
 	$(error "docker is not installed: https://docs.docker.com/install/")
 endif
-	for v in $(VERSIONS); do \
+	for v in $(PHP_VERSIONS); do \
 		docker run --rm -i hadolint/hadolint < php/$${v}/Dockerfile ; \
 	done
-
-pull:
-	docker pull $(BASE_IMAGE)
+	docker run --rm -i hadolint/hadolint < node/Dockerfile
 
 Dockerfile:
-	for v in $(VERSIONS); do \
+	for v in $(PHP_VERSIONS); do \
 		if [[ -f php/$${v}/Dockerfile.in ]] ; then f=php/$${v}/Dockerfile.in; else f=Dockerfile.common.in ; fi ; \
 		PHP_VERSION=$${v} envsubst \
-			'$${BASE_IMAGE_NAME},$${PHP_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
+			'$${PHP_IMAGE_NAME},$${PHP_VERSION}' \
 			< $$f > php/$${v}/$@ ; \
 	done
+	envsubst '$${NODE_IMAGE_NAME},$${NODE_IMAGE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
+		< node/Dockerfile.in > node/Dockerfile
 
 build:
 ifndef DOCKER
 $(error "docker is not installed: https://docs.docker.com/install/")
 endif
-	$(MAKE) -j lint pull
-	for v in $(VERSIONS); do \
+	$(MAKE) -j lint
+	for v in $(PHP_VERSIONS); do \
 		docker build \
 			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_TAG) \
 			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_NUM) \
 			--tag=$(BUILD_IMAGE):php$${v}-$(REVISION_TAG) \
 			php/$${v}/ ; \
 	done
+	docker build \
+		--tag=$(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_TAG) \
+		--tag=$(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_NUM) \
+		--tag=$(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(REVISION_TAG) \
+		node/ ; \
+
 
 .PHONY: test
 test:
-	@for v in $(VERSIONS); do \
+	@for v in $(PHP_VERSIONS); do \
 		$(MAKE) --no-print-directory -C $@ clean; \
 		$(MAKE) TESTVERSION=$$v --no-print-directory -k -C $@; \
 		$(MAKE) --no-print-directory -C $@ status; \
@@ -126,20 +134,24 @@ push-tag:
 ifndef DOCKER
 	$(error "docker is not installed: https://docs.docker.com/install/")
 endif
-	for v in $(VERSIONS); do \
-		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_TAG) ; \
-		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_NUM) ; \
+	for v in $(PHP_VERSIONS); do \
+		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_TAG); \
+		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_NUM); \
 	done
+	docker push $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_TAG)
+	docker push $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_NUM)
 
 push-latest:
 ifndef DOCKER
 	$(error "docker is not installed: https://docs.docker.com/install/")
 endif
 	if [[ "$(PUSH_LATEST)" = "true" ]]; then { \
-		for v in $(VERSIONS); do \
+		for v in $(PHP_VERSIONS); do \
 			docker tag $(BUILD_IMAGE):php$${v}-$(REVISION_TAG) $(BUILD_IMAGE):php$${v}; \
 			docker push $(BUILD_IMAGE):php$${v}; \
-		done \
+		done; \
+		docker tag $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(REVISION_TAG) $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}; \
+		docker push $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}; \
 	}	else { \
 		echo "Not tagged.. skipping latest"; \
 	} fi
