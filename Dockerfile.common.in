@@ -1,26 +1,20 @@
 FROM ${BASE_IMAGE_NAME}:${PHP_VERSION}
 
-LABEL authors="${AUTHOR}"
-
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 USER root
 
+RUN echo 'deb http://ftp.us.debian.org/debian sid main' | tee -a /etc/apt/sources.list
+# hadolint ignore=DL3009
+RUN apt-get update
 # hadolint ignore=DL3008
-RUN echo 'deb http://ftp.us.debian.org/debian sid main' | tee -a /etc/apt/sources.list && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-    apt-get install --no-install-recommends -y \
-      build-essential \
-      mysql-client-5.7 \
-      nodejs \
-      subversion \
-      && \
-    rm -rf /var/lib/apt/lists/* && \
-    docker-php-ext-install mysqli
-
-RUN npm install -g \
-      stylelint@${STYLELINT_VERSION} \
-      eslint@${ESLINT_VERSION}
+RUN apt-get install --no-install-recommends gcc-8-base -y
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
+# hadolint ignore=DL3008
+RUN apt-get install --no-install-recommends -y build-essential mariadb-client nodejs npm subversion
+RUN rm -rf /var/lib/apt/lists/*
+RUN docker-php-ext-install mysqli
+RUN npm install -g stylelint@${STYLELINT_VERSION} eslint@${ESLINT_VERSION}
 
 USER circleci
 

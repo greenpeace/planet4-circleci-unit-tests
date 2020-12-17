@@ -3,10 +3,12 @@ SHELL := /bin/bash
 # ============================================================================
 
 # https://www.npmjs.com/package/stylelint
-STYLELINT_VERSION := 10.0.1
+STYLELINT_VERSION := 13.8.0
+export STYLELINT_VERSION
 
 # https://www.npmjs.com/package/eslint
-ESLINT_VERSION := 5.16.0
+ESLINT_VERSION := 7.15.0
+export ESLINT_VERSION
 
 # ============================================================================
 
@@ -22,12 +24,6 @@ export BASE_IMAGE_NAME
 
 BASE_IMAGE := $(BASE_IMAGE_NAME):$(BASE_IMAGE_VERSION)
 export BASE_IMAGE
-
-MAINTAINER_NAME 	?= Raymond Walker
-MAINTAINER_EMAIL 	?= raymond.walker@greenpeace.org
-
-AUTHOR := $(MAINTAINER_NAME) <$(MAINTAINER_EMAIL)>
-export AUTHOR
 
 # ============================================================================
 
@@ -86,7 +82,6 @@ ifndef YAMLLINT
 	$(error "yamllint is not installed: https://github.com/adrienverge/yamllint")
 endif
 	@find . -type f -name '*.yml' | xargs yamllint
-	@find . -type f -name '*.yaml' | xargs yamllint
 
 lint-docker: Dockerfile
 ifndef DOCKER
@@ -109,7 +104,7 @@ Dockerfile:
 	for v in $(VERSIONS); do \
 		if [[ -f php/$${v}/Dockerfile.in ]] ; then f=php/$${v}/Dockerfile.in; else f=Dockerfile.common.in ; fi ; \
 		PHP_VERSION=$${v} envsubst \
-			'$${BASE_IMAGE_NAME},$${AUTHOR},$${PHP_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
+			'$${BASE_IMAGE_NAME},$${PHP_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
 			< $$f > php/$${v}/$@ ; \
 	done
 

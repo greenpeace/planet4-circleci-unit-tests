@@ -15,7 +15,15 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - run: make clean build test
+      - run:
+          name: clean
+          command: make clean
+      - run:
+          name: build
+          command: make build
+      - run:
+          name: test
+          command: make test
       - run: docker-login.sh
       - run: |
           mkdir -p /tmp/workspace/var
@@ -25,6 +33,10 @@ jobs:
           name: Notify failure
           when: on_fail
           command: TYPE="Build" notify-job-failure.sh
+      - store_test_results:
+          path: /home/circleci/app/test/logs
+      - store_artifacts:
+          path: /home/circleci/app/test/logs
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
