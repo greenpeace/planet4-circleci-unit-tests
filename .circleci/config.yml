@@ -71,7 +71,7 @@ jobs:
           name: Commit
           command: |
             git checkout ${CIRCLE_BRANCH}
-            make clean build
+            make build
             update-build-numbers.sh -f \
                 php/7.3/Dockerfile
 
