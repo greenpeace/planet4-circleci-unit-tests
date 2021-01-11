@@ -4,6 +4,10 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 USER root
 
+# Install Composer 1.10.19
+# https://github.com/greenpeace/planet4-docker/blob/master/config.default#L42
+RUN composer self-update --1
+
 # RUN echo 'deb http://ftp.us.debian.org/debian sid main' | tee -a /etc/apt/sources.list
 # hadolint ignore=DL3009
 RUN apt-get update
