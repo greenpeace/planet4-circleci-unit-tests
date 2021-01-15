@@ -19,11 +19,11 @@ BUILD_IMAGE := $(BUILD_NAMESPACE)/$(IMAGE_NAME)
 export BUILD_IMAGE
 
 # PHP image
-PHP_IMAGE_NAME ?= circleci/php
+PHP_IMAGE_NAME ?= cimg/php
 export PHP_IMAGE_NAME
 
 # Node image
-NODE_IMAGE_NAME ?= circleci/node
+NODE_IMAGE_NAME ?= cimg/node
 NODE_IMAGE_VERSION ?= lts
 export NODE_IMAGE_NAME
 export NODE_IMAGE_VERSION
