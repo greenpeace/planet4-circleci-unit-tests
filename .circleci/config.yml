@@ -22,8 +22,8 @@ jobs:
           docker_layer_caching: true
       - checkout
       - run:
-          name: bake
-          command: make bake
+          name: prepare Dockerfiles
+          command: make prepare
       - run:
           name: build
           command: make build
@@ -44,7 +44,7 @@ jobs:
           paths:
             - var
 
-  promote:
+  tag:
     <<: *defaults
     steps:
       - attach_workspace:
@@ -53,11 +53,13 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - run:
-          name: Merge from develop
+          name: prepare git
           command: |
-            merge-develop.sh
+            git config user.email "circleci-bot@greenpeace.org"
+            git config user.name "CircleCI Bot"
+            git config merge.ours.driver true
       - run:
-          name: Tag
+          name: tag
           command: |
             current_version=$(git-current-tag.sh)
             new_version=$(increment-version.sh $current_version)
@@ -71,23 +73,20 @@ workflows:
     jobs:
       - build-push:
           context: org-global
-          filters:
-            branches:
-              ignore: master
-      - hold-promote:
+      - hold-tag:
           type: approval
           requires:
             - build-push
           filters:
             branches:
-              only: develop
-      - promote:
+              only: main
+      - tag:
           context: org-global
           requires:
-            - hold-promote
+            - hold-tag
           filters:
             branches:
-              only: develop
+              only: main
 
   tag:
     jobs:
