@@ -7,7 +7,7 @@ XML := xml
 OUT := out
 
 # Output directory
-LOGS := logs
+LOGS := logs/$(TESTVERSION)
 
 # Used in .env.bash
 export LOGS
@@ -21,16 +21,6 @@ TAP_FILES := $(patsubst %.$(BATS), $(LOGS)/%.$(TAP), $(TEST_FILES))
 
 # XUNIT output
 XML_DIRS := $(patsubst %.$(BATS), $(LOGS)/%/, $(TEST_FILES))
-#XML_FILES := $(patsubst %.$(BATS), $(LOGS)/%/results.$(XML), $(TEST_FILES))
-
-# Uncomment to enable automatic parralelisation of N available cores
-
-# NPROCS = $(shell grep -c 'processor' /proc/cpuinfo 2>/dev/null)
-# ifeq ($(strip $(NPROCS)),)
-# NPROCS = $(shell sysctl hw.ncpu  | grep -o '[0-9]\+')
-# endif
-#
-# MAKEFLAGS += -j$(NPROCS)
 
 .PHONY: all clean tap xml
 
