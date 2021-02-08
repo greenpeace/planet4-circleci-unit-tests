@@ -1,4 +1,4 @@
-FROM ${NODE_IMAGE_NAME}:${NODE_IMAGE_VERSION}
+FROM ${NODE_IMAGE_NAME}:${NODE_VERSION}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -7,5 +7,3 @@ USER root
 RUN npm install -g stylelint@${STYLELINT_VERSION} eslint@${ESLINT_VERSION}
 
 USER circleci
-
-ENV PATH="/home/circleci/.composer/vendor/bin:${PATH}"

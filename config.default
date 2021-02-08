@@ -1,0 +1,11 @@
+PHP_IMAGE_NAME=cimg/php
+PHP_VERSIONS=7.3 8.0
+
+NODE_IMAGE_NAME=cimg/node
+NODE_VERSION=lts
+
+# https://www.npmjs.com/package/stylelint
+STYLELINT_VERSION=13.8.0
+
+# https://www.npmjs.com/package/eslint
+ESLINT_VERSION=7.15.0

@@ -22,6 +22,9 @@ jobs:
           docker_layer_caching: true
       - checkout
       - run:
+          name: bake
+          command: make bake
+      - run:
           name: build
           command: make build
       - run:
@@ -32,23 +35,14 @@ jobs:
           mkdir -p /tmp/workspace/var
           echo "${CIRCLE_BUILD_NUM}" > /tmp/workspace/var/circle-build-num
       - run: make -j2 push push-latest
-      - run:
-          name: Notify failure
-          when: on_fail
-          command: TYPE="Build" notify-job-failure.sh
       - store_test_results:
-          path: /home/circleci/app/test/logs
+          path: /home/circleci/app/test/logs/
       - store_artifacts:
-          path: /home/circleci/app/test/logs
+          path: /home/circleci/app/test/logs/
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
             - var
-
-  notify-promote:
-    <<: *defaults
-    steps:
-      - run: TYPE="@rawalker Promotion" notify-job-hold.sh
 
   promote:
     <<: *defaults
@@ -56,24 +50,20 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run:
-          name: Release
+          name: Merge from develop
+          command: |
+            merge-develop.sh
+      - run:
+          name: Tag
           command: |
             current_version=$(git-current-tag.sh)
             new_version=$(increment-version.sh $current_version)
             echo "Promoting branch ${CIRCLE_BRANCH} to ${new_version}"
-
-            release-start.sh $new_version
-            release-finish.sh $new_version
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run:
-          name: Commit
-          command: |
-            git checkout ${CIRCLE_BRANCH}
-            make build
-            update-build-numbers.sh -f \
-                php/7.3/Dockerfile
+            git tag -a "$new_version" -m "$new_version"
+            git push origin --tags
 
 workflows:
   version: 2
@@ -86,13 +76,6 @@ workflows:
               ignore: master
       - hold-promote:
           type: approval
-          requires:
-            - build-push
-          filters:
-            branches:
-              only: develop
-      - notify-promote:
-          context: org-global
           requires:
             - build-push
           filters:

@@ -2,13 +2,9 @@ SHELL := /bin/bash
 
 # ============================================================================
 
-# https://www.npmjs.com/package/stylelint
-STYLELINT_VERSION := 13.8.0
-export STYLELINT_VERSION
-
-# https://www.npmjs.com/package/eslint
-ESLINT_VERSION := 7.15.0
-export ESLINT_VERSION
+# Read default configuration
+include config.default
+export $(shell sed 's/=.*//' config.default)
 
 # ============================================================================
 
@@ -17,16 +13,6 @@ BUILD_NAMESPACE ?= greenpeaceinternational
 
 BUILD_IMAGE := $(BUILD_NAMESPACE)/$(IMAGE_NAME)
 export BUILD_IMAGE
-
-# PHP image
-PHP_IMAGE_NAME ?= cimg/php
-export PHP_IMAGE_NAME
-
-# Node image
-NODE_IMAGE_NAME ?= cimg/node
-NODE_IMAGE_VERSION ?= lts
-export NODE_IMAGE_NAME
-export NODE_IMAGE_VERSION
 
 # ============================================================================
 
@@ -62,12 +48,10 @@ REVISION_TAG = $(shell git rev-parse --short HEAD)
 
 DOCKER := $(shell command -v docker 2> /dev/null)
 YAMLLINT := $(shell command -v yamllint 2> /dev/null)
-PHP_VERSIONS := $(shell find php/* -type d | sed s/php\\///g )
-export PHP_VERSIONS
 
 # ============================================================================
 
-all: init build test push
+all: init bake build test push
 
 init:
 	@chmod 755 .githooks/*
@@ -91,15 +75,19 @@ endif
 	done
 	docker run --rm -i hadolint/hadolint < node/Dockerfile
 
+bake: Dockerfile
+
 Dockerfile:
 	for v in $(PHP_VERSIONS); do \
-		if [[ -f php/$${v}/Dockerfile.in ]] ; then f=php/$${v}/Dockerfile.in; else f=Dockerfile.common.in ; fi ; \
+		f=Dockerfile.php.in ; \
+		mkdir -p php/$${v} ; \
 		PHP_VERSION=$${v} envsubst \
 			'$${PHP_IMAGE_NAME},$${PHP_VERSION}' \
 			< $$f > php/$${v}/$@ ; \
 	done
-	envsubst '$${NODE_IMAGE_NAME},$${NODE_IMAGE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
-		< node/Dockerfile.in > node/Dockerfile
+	mkdir -p node
+	envsubst '$${NODE_IMAGE_NAME},$${NODE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
+		< Dockerfile.node.in > node/Dockerfile
 
 build:
 ifndef DOCKER
@@ -114,18 +102,18 @@ endif
 			php/$${v}/ ; \
 	done
 	docker build \
-		--tag=$(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_TAG) \
-		--tag=$(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_NUM) \
-		--tag=$(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(REVISION_TAG) \
+		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_TAG) \
+		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_NUM) \
+		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(REVISION_TAG) \
 		node/ ; \
 
 
 .PHONY: test
 test:
 	@for v in $(PHP_VERSIONS); do \
-		$(MAKE) --no-print-directory -C $@ clean; \
+		$(MAKE) TESTVERSION=$$v --no-print-directory -C $@ clean; \
 		$(MAKE) TESTVERSION=$$v --no-print-directory -k -C $@; \
-		$(MAKE) --no-print-directory -C $@ status; \
+		$(MAKE) TESTVERSION=$$v --no-print-directory -C $@ status; \
 	done
 
 push: push-tag
@@ -138,8 +126,8 @@ endif
 		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_TAG); \
 		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_NUM); \
 	done
-	docker push $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_TAG)
-	docker push $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(BUILD_NUM)
+	docker push $(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_TAG)
+	docker push $(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_NUM)
 
 push-latest:
 ifndef DOCKER
@@ -150,8 +138,8 @@ endif
 			docker tag $(BUILD_IMAGE):php$${v}-$(REVISION_TAG) $(BUILD_IMAGE):php$${v}; \
 			docker push $(BUILD_IMAGE):php$${v}; \
 		done; \
-		docker tag $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}-$(REVISION_TAG) $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}; \
-		docker push $(BUILD_IMAGE):node${NODE_IMAGE_VERSION}; \
+		docker tag $(BUILD_IMAGE):node${NODE_VERSION}-$(REVISION_TAG) $(BUILD_IMAGE):node${NODE_VERSION}; \
+		docker push $(BUILD_IMAGE):node${NODE_VERSION}; \
 	}	else { \
 		echo "Not tagged.. skipping latest"; \
 	} fi
