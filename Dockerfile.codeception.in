@@ -1,0 +1,20 @@
+FROM ${CODECEPTION_IMAGE_NAME}:${CODECEPTION_VERSION}
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y wget rsync && \
+    rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* && \
+    wget https://github.com/jwilder/dockerize/releases/download/v${DOCKERIZE_VERSION}/dockerize-linux-amd64-v${DOCKERIZE_VERSION}.tar.gz && \
+    tar -C /usr/bin -xzvf dockerize-linux-amd64-v${DOCKERIZE_VERSION}.tar.gz && \
+    rm dockerize-linux-amd64-v${DOCKERIZE_VERSION}.tar.gz && \
+    rm -fr /usr/share/man/* /usr/share/doc/* \
+    apt-get clean
+
+RUN composer require --no-update \
+    codeception/module-asserts:1.2.1 \
+    codeception/module-db:1.0.1 \
+    codeception/module-webdriver:1.1.0 \
+    codeception/module-cli:1.0.2
+
+COPY codeceptionify.sh /usr/bin/codeceptionify.sh
+
+COPY codeception.yml .

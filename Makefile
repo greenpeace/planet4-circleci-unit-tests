@@ -8,9 +8,6 @@ export $(shell sed 's/=.*//' config.default)
 
 # ============================================================================
 
-IMAGE_NAME := p4-unit-tests
-BUILD_NAMESPACE ?= greenpeaceinternational
-
 BUILD_IMAGE := $(BUILD_NAMESPACE)/$(IMAGE_NAME)
 export BUILD_IMAGE
 
@@ -71,7 +68,7 @@ ifndef DOCKER
 	$(error "docker is not installed: https://docs.docker.com/install/")
 endif
 	for v in $(PHP_VERSIONS); do \
-		docker run --rm -i hadolint/hadolint < php/$${v}/Dockerfile ; \
+		docker run --rm -i hadolint/hadolint < php/$${v}/Dockerfile; \
 	done
 	docker run --rm -i hadolint/hadolint < node/Dockerfile
 
@@ -79,15 +76,18 @@ prepare: Dockerfile
 
 Dockerfile:
 	for v in $(PHP_VERSIONS); do \
-		f=Dockerfile.php.in ; \
-		mkdir -p php/$${v} ; \
+		f=Dockerfile.php.in; \
+		mkdir -p php/$${v}; \
 		PHP_VERSION=$${v} envsubst \
 			'$${PHP_IMAGE_NAME},$${PHP_VERSION}' \
-			< $$f > php/$${v}/$@ ; \
+			< $$f > php/$${v}/$@; \
 	done
 	mkdir -p node
 	envsubst '$${NODE_IMAGE_NAME},$${NODE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
 		< Dockerfile.node.in > node/Dockerfile
+	mkdir -p codeception
+	envsubst '$${CODECEPTION_IMAGE_NAME},$${CODECEPTION_VERSION},$${DOCKERIZE_VERSION}' \
+		< Dockerfile.codeception.in > codeception/Dockerfile
 
 build:
 ifndef DOCKER
@@ -99,14 +99,18 @@ endif
 			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_TAG) \
 			--tag=$(BUILD_IMAGE):php$${v}-$(BUILD_NUM) \
 			--tag=$(BUILD_IMAGE):php$${v}-$(REVISION_TAG) \
-			php/$${v}/ ; \
+			php/$${v}/; \
 	done
 	docker build \
 		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_TAG) \
 		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_NUM) \
 		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(REVISION_TAG) \
-		node/ ; \
-
+		node/;
+	docker build \
+		--tag=$(BUILD_IMAGE):codeception${CODECEPTION_VERSION}-$(BUILD_TAG) \
+		--tag=$(BUILD_IMAGE):codeception${CODECEPTION_VERSION}-$(BUILD_NUM) \
+		--tag=$(BUILD_IMAGE):codeception${CODECEPTION_VERSION}-$(REVISION_TAG) \
+		codeception/;
 
 .PHONY: test
 test:
@@ -128,6 +132,8 @@ endif
 	done
 	docker push $(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_TAG)
 	docker push $(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_NUM)
+	docker push $(BUILD_IMAGE):codeception${CODECEPTION_VERSION}-$(BUILD_TAG)
+	docker push $(BUILD_IMAGE):codeception${CODECEPTION_VERSION}-$(BUILD_NUM)
 
 push-latest:
 ifndef DOCKER
