@@ -4,10 +4,14 @@ Includes dependencies needed for phpunit testing suite and lint checks for css/j
 
 ## Development
 
-Run `make init` after cloning to ensure you have the pre-commit hooks installed.
+Running `make` will build the images and run the tests.
 
 ### Requirements
 
 1.  Docker
 2.  yamllint
-3.  circleci
+
+#### Tests requirements
+
+1. ag
+2. bats

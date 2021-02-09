@@ -51,7 +51,7 @@ YAMLLINT := $(shell command -v yamllint 2> /dev/null)
 
 # ============================================================================
 
-all: init bake build test push
+all: init prepare build test push
 
 init:
 	@chmod 755 .githooks/*
@@ -75,7 +75,7 @@ endif
 	done
 	docker run --rm -i hadolint/hadolint < node/Dockerfile
 
-bake: Dockerfile
+prepare: Dockerfile
 
 Dockerfile:
 	for v in $(PHP_VERSIONS); do \
