@@ -12,8 +12,8 @@ RUN composer self-update --1
 # hadolint ignore=DL3009
 RUN apt-get update
 # hadolint ignore=DL3008
-RUN apt-get install --no-install-recommends -y build-essential mariadb-client subversion php-xdebug
-RUN rm -rf /var/lib/apt/lists/*
+RUN apt-get install --no-install-recommends -y build-essential mariadb-client subversion php-xdebug \
+ && rm -rf /var/lib/apt/lists/*
 
 USER circleci
 
