@@ -86,7 +86,8 @@ Dockerfile:
 			< $$f > php/$${v}/$@ ; \
 	done
 	mkdir -p node
-	envsubst '$${NODE_IMAGE_NAME},$${NODE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION}' \
+	envsubst '$${NODE_IMAGE_NAME},$${NODE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION} \
+		$${PA11Y_CI_VERSION},$${PA11Y_CI_REPORTER_HTML_VERSION}' \
 		< Dockerfile.node.in > node/Dockerfile
 
 build:
