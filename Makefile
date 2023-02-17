@@ -73,7 +73,9 @@ endif
 	for v in $(PHP_VERSIONS); do \
 		docker run --rm -i hadolint/hadolint < php/$${v}/Dockerfile ; \
 	done
-	docker run --rm -i hadolint/hadolint < node/Dockerfile
+	for v in $(NODE_VERSIONS); do \
+		docker run --rm -i hadolint/hadolint < node/$${v}/Dockerfile ; \
+	done
 
 prepare: Dockerfile
 
@@ -85,10 +87,14 @@ Dockerfile:
 			'$${PHP_IMAGE_NAME},$${PHP_VERSION}' \
 			< $$f > php/$${v}/$@ ; \
 	done
-	mkdir -p node
-	envsubst '$${NODE_IMAGE_NAME},$${NODE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION} \
-		$${PA11Y_CI_VERSION},$${PA11Y_CI_REPORTER_HTML_VERSION}' \
-		< Dockerfile.node.in > node/Dockerfile
+	for v in $(NODE_VERSIONS); do \
+		f=Dockerfile.node.in ; \
+		mkdir -p node/$${v} ; \
+		NODE_VERSION=$${v} envsubst \
+			'$${NODE_IMAGE_NAME},$${NODE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION} \
+				$${PA11Y_CI_VERSION},$${PA11Y_CI_REPORTER_HTML_VERSION}' \
+			< $$f > node/$${v}/$@ ; \
+	done
 
 build:
 ifndef DOCKER
@@ -102,11 +108,13 @@ endif
 			--tag=$(BUILD_IMAGE):php$${v}-$(REVISION_TAG) \
 			php/$${v}/ ; \
 	done
-	docker build \
-		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_TAG) \
-		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_NUM) \
-		--tag=$(BUILD_IMAGE):node${NODE_VERSION}-$(REVISION_TAG) \
-		node/ ; \
+	for v in $(NODE_VERSIONS); do \
+		docker build \
+			--tag=$(BUILD_IMAGE):node$${v}-$(BUILD_TAG) \
+			--tag=$(BUILD_IMAGE):node$${v}-$(BUILD_NUM) \
+			--tag=$(BUILD_IMAGE):node$${v}-$(REVISION_TAG) \
+			node/$${v} ; \
+	done
 
 
 .PHONY: test
@@ -127,8 +135,10 @@ endif
 		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_TAG); \
 		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_NUM); \
 	done
-	docker push $(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_TAG)
-	docker push $(BUILD_IMAGE):node${NODE_VERSION}-$(BUILD_NUM)
+	for v in $(NODE_VERSIONS); do \
+		docker push $(BUILD_IMAGE):node$${v}-$(BUILD_TAG); \
+		docker push $(BUILD_IMAGE):node$${v}-$(BUILD_NUM); \
+	done
 
 push-latest:
 ifndef DOCKER
@@ -139,8 +149,10 @@ endif
 			docker tag $(BUILD_IMAGE):php$${v}-$(REVISION_TAG) $(BUILD_IMAGE):php$${v}; \
 			docker push $(BUILD_IMAGE):php$${v}; \
 		done; \
-		docker tag $(BUILD_IMAGE):node${NODE_VERSION}-$(REVISION_TAG) $(BUILD_IMAGE):node${NODE_VERSION}; \
-		docker push $(BUILD_IMAGE):node${NODE_VERSION}; \
+		for v in $(NODE_VERSIONS); do \
+			docker tag $(BUILD_IMAGE):node$${v}-$(REVISION_TAG) $(BUILD_IMAGE):node$${v}; \
+			docker push $(BUILD_IMAGE):node$${v}; \
+		done; \
 	}	else { \
 		echo "Not tagged.. skipping latest"; \
 	} fi
