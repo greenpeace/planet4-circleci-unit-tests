@@ -45,6 +45,3 @@ $(LOGS):
 
 $(LOGS)/%.$(TAP): %.$(BATS)
 		-@OUT=$(OUT) bats --tap $^ | tee $@
-
-$(LOGS)/%/results.$(XML): $(LOGS)/%.$(TAP)
-		@tap-xunit --package="p4.ci.codeception.$(shell echo $@ | cut -d/ -f2 | cut -d. -f1 )" < $^ > $@
