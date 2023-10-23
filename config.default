@@ -15,3 +15,6 @@ PA11Y_CI_VERSION=3.0.1
 
 # https://www.npmjs.com/package/pa11y-ci-reporter-html
 PA11Y_CI_REPORTER_HTML_VERSION=5.0.2
+
+# https://www.npmjs.com/package/@commitlint/cli
+COMMITLINT_VERSION=17.7.2

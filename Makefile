@@ -92,7 +92,7 @@ Dockerfile:
 		mkdir -p node/$${v} ; \
 		NODE_VERSION=$${v} envsubst \
 			'$${NODE_IMAGE_NAME},$${NODE_VERSION},$${STYLELINT_VERSION},$${ESLINT_VERSION} \
-				$${PA11Y_CI_VERSION},$${PA11Y_CI_REPORTER_HTML_VERSION}' \
+				$${PA11Y_CI_VERSION},$${PA11Y_CI_REPORTER_HTML_VERSION},$${COMMITLINT_VERSION}' \
 			< $$f > node/$${v}/$@ ; \
 	done
 
