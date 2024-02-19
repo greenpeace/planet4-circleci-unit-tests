@@ -134,11 +134,11 @@ endif
 	for v in $(PHP_VERSIONS); do \
 		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_TAG); \
 		docker push $(BUILD_IMAGE):php$${v}-$(BUILD_NUM); \
-	done
+	done; \
 	for v in $(NODE_VERSIONS); do \
 		docker push $(BUILD_IMAGE):node$${v}-$(BUILD_TAG); \
 		docker push $(BUILD_IMAGE):node$${v}-$(BUILD_NUM); \
-	done
+	done;
 
 push-latest:
 ifndef DOCKER
