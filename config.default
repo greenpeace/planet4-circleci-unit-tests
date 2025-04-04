@@ -7,6 +7,9 @@ NODE_VERSIONS=20.18.0 22.5.1
 # https://www.npmjs.com/package/stylelint
 STYLELINT_VERSION=14.16.1
 
+# https://www.npmjs.com/package/postcss-scss
+POSTCSS_SCSS_VERSION=4.0.9
+
 # https://www.npmjs.com/package/eslint
 ESLINT_VERSION=8.56.0
 
